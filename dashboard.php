@@ -1,5 +1,7 @@
 <?php
 session_start();
+header('Content-Type: text/html; charset=utf-8');
+
 if (!isset($_SESSION['usuario_id'])) {
     header("Location: index.html");
     exit();
@@ -139,12 +141,12 @@ function generateReport($report_id) {
         $pdf->AddPage();
 
         // Agregar título
-        $pdf->SetFont('Arial','B',16);
+        $pdf->SetFont('Helvetica','B',16);
         $pdf->Cell(40,10,'Reporte de Abonos');
         $pdf->Ln(20);
 
         // Agregar datos del usuario
-        $pdf->SetFont('Arial','',12);
+        $pdf->SetFont('Helvetica','',12);
         $pdf->Cell(40,10,'Nombre: ' . $user_row['nombre']);
         $pdf->Ln(10);
         $pdf->Cell(40,10,'Apellido: ' . $user_row['apellido']);
@@ -188,12 +190,12 @@ function generateAllReports($usuario_id) {
     $pdf->AddPage();
 
     // Agregar título
-    $pdf->SetFont('Arial','B',16);
+    $pdf->SetFont('Helvetica','B',16);
     $pdf->Cell(40,10,'Reporte Completo de Abonos');
     $pdf->Ln(20);
 
     // Agregar datos del usuario
-    $pdf->SetFont('Arial','',12);
+    $pdf->SetFont('Helvetica','',12);
     $pdf->Cell(40,10,'Nombre: ' . $user_row['nombre']);
     $pdf->Ln(10);
     $pdf->Cell(40,10,'Apellido: ' . $user_row['apellido']);
@@ -213,7 +215,7 @@ function generateAllReports($usuario_id) {
     }
 
     // Agregar monto total
-    $pdf->SetFont('Arial','B',12);
+    $pdf->SetFont('Helvetica','B',12);
     $pdf->Cell(40,10,'Monto Total: $' . $totalMonto);
     $pdf->Ln(10);
 
@@ -239,22 +241,54 @@ function generatePolicy($usuario_id) {
     $pdf->AddPage();
 
     // Agregar título
-    $pdf->SetFont('Arial','B',16);
-    $pdf->Cell(40,10,'Póliza de Seguro');
-    $pdf->Ln(20);
+    $pdf->SetFont('Helvetica','B',16);
+    $pdf->Cell(0,10,utf8_decode('Póliza de Seguro'),0,1,'C');
+    $pdf->Ln(10);
 
     // Agregar datos del usuario
-    $pdf->SetFont('Arial','',12);
-    $pdf->Cell(40,10,'Nombre: ' . $user_row['nombre']);
+    $pdf->SetFont('Helvetica','',12);
+    $pdf->Cell(0,10,utf8_decode('Aseguradora: Hasbi On Tour Insurance'),0,1);
+    $pdf->Cell(0,10,utf8_decode('Número de Póliza: 123456789'),0,1);
+    $pdf->Cell(0,10,utf8_decode('Titular de la Póliza: ') . utf8_decode($user_row['nombre']) . ' ' . utf8_decode($user_row['apellido']),0,1);
+    $pdf->Cell(0,10,utf8_decode('Fecha de Emisión: ') . date('Y-m-d'),0,1);
     $pdf->Ln(10);
-    $pdf->Cell(40,10,'Apellido: ' . $user_row['apellido']);
+
+    // Agregar coberturas
+    $pdf->Cell(0,10,utf8_decode('Cobertura:'),0,1);
+    $pdf->Cell(0,10,utf8_decode('- Accidentes Personales: Cobertura hasta $50,000'),0,1);
+    $pdf->Cell(0,10,utf8_decode('- Gastos Médicos: Cobertura hasta $100,000'),0,1);
+    $pdf->Cell(0,10,utf8_decode('- Cancelación/Interrupción del Viaje: Cobertura hasta $10,000'),0,1);
+    $pdf->Cell(0,10,utf8_decode('- Pérdida de Equipaje: Cobertura hasta $5,000'),0,1);
+    $pdf->Cell(0,10,utf8_decode('- Retraso de Vuelo: Cobertura hasta $1,000'),0,1);
     $pdf->Ln(10);
-    $pdf->Cell(40,10,'Correo: ' . $user_row['email']);
+
+    // Agregar detalles del asegurado
+    $pdf->Cell(0,10,utf8_decode('Detalles del Asegurado:'),0,1);
+    $pdf->Cell(0,10,utf8_decode('- Nombre: ') . utf8_decode($user_row['nombre']),0,1);
+    $pdf->Cell(0,10,utf8_decode('- Apellido: ') . utf8_decode($user_row['apellido']),0,1);
+    $pdf->Cell(0,10,utf8_decode('- Correo Electrónico: ') . utf8_decode($user_row['email']),0,1);
+    $pdf->Ln(10);
+
+    // Agregar términos y condiciones
+    $pdf->Cell(0,10,utf8_decode('Términos y Condiciones:'),0,1);
+    $pdf->MultiCell(0,10,utf8_decode('1. Esta póliza de seguro es válida únicamente para el viaje contratado con Hasbi On Tour.'));
+    $pdf->MultiCell(0,10,utf8_decode('2. La cobertura comienza desde la fecha de inicio del viaje y finaliza en la fecha de retorno.'));
+    $pdf->MultiCell(0,10,utf8_decode('3. El asegurado debe notificar cualquier incidente dentro de las 24 horas posteriores a su ocurrencia.'));
+    $pdf->MultiCell(0,10,utf8_decode('4. Para reclamaciones, se debe proporcionar la documentación requerida, incluyendo recibos y reportes médicos.'));
+    $pdf->MultiCell(0,10,utf8_decode('5. Las exclusiones de esta póliza incluyen, pero no se limitan a, actividades extremas, enfermedades preexistentes, y actos de guerra.'));
+    $pdf->Ln(10);
+
+    // Agregar contacto para reclamaciones
+    $pdf->Cell(0,10,utf8_decode('Contacto para Reclamaciones:'),0,1);
+    $pdf->Cell(0,10,utf8_decode('- Teléfono: +56984494726'),0,1);
+    $pdf->Cell(0,10,utf8_decode('- Correo Electrónico: contacto@hasbiontour.cl'),0,1);
     $pdf->Ln(20);
 
-    // Agregar contenido de la póliza
-    $pdf->MultiCell(0, 10, 'Esta es la póliza de seguro para el usuario. A continuación se detallan las coberturas y condiciones del seguro.');
-    $pdf->Ln(10);
+    // Firma
+    $pdf->Cell(0,10,utf8_decode('Firma:'),0,1);
+    $pdf->Ln(20);
+    $pdf->Cell(0,10,'______________________',0,1);
+    $pdf->Cell(0,10,utf8_decode('Representante de Hasbi On Tour Insurance'),0,1);
 
     // Output PDF
     $pdf->Output('D', 'poliza_seguro.pdf'); // D para forzar la descarga
@@ -278,25 +312,62 @@ function generateContract($usuario_id) {
     $pdf->AddPage();
 
     // Agregar título
-    $pdf->SetFont('Arial','B',16);
-    $pdf->Cell(40,10,'Contrato de Viaje');
-    $pdf->Ln(20);
+    $pdf->SetFont('Helvetica','B',16);
+    $pdf->Cell(0,10,utf8_decode('Contrato de Servicios Turísticos'),0,1,'C');
+    $pdf->Ln(10);
 
     // Agregar datos del usuario
-    $pdf->SetFont('Arial','',12);
-    $pdf->Cell(40,10,'Nombre: ' . $user_row['nombre']);
+    $pdf->SetFont('Helvetica','',12);
+    $pdf->Cell(0,10,utf8_decode('Agencia de Viajes: Hasbi On Tour'),0,1);
+    $pdf->Cell(0,10,utf8_decode('Número de Contrato: 987654321'),0,1);
+    $pdf->Cell(0,10,utf8_decode('Titular del Contrato: ') . utf8_decode($user_row['nombre']) . ' ' . utf8_decode($user_row['apellido']),0,1);
+    $pdf->Cell(0,10,utf8_decode('Fecha de Emisión: ') . date('Y-m-d'),0,1);
     $pdf->Ln(10);
-    $pdf->Cell(40,10,'Apellido: ' . $user_row['apellido']);
+
+    // Agregar detalles del viaje
+    $pdf->Cell(0,10,utf8_decode('Detalles del Viaje:'),0,1);
+    $pdf->Cell(0,10,utf8_decode('- Destino: [Especificar Destino]'),0,1);
+    $pdf->Cell(0,10,utf8_decode('- Duración del Viaje: [Especificar Duración]'),0,1);
+    $pdf->Cell(0,10,utf8_decode('- Fecha de Salida: [Especificar Fecha]'),0,1);
+    $pdf->Cell(0,10,utf8_decode('- Fecha de Retorno: [Especificar Fecha]'),0,1);
     $pdf->Ln(10);
-    $pdf->Cell(40,10,'Correo: ' . $user_row['email']);
+
+    // Agregar servicios incluidos
+    $pdf->Cell(0,10,utf8_decode('Servicios Incluidos:'),0,1);
+    $pdf->Cell(0,10,utf8_decode('1. Transporte: Incluye vuelos de ida y vuelta, traslados locales.'),0,1);
+    $pdf->Cell(0,10,utf8_decode('2. Alojamiento: Estancia en hoteles de categoría [Especificar Categoría].'),0,1);
+    $pdf->Cell(0,10,utf8_decode('3. Alimentación: Plan de comidas [Especificar Detalles].'),0,1);
+    $pdf->Cell(0,10,utf8_decode('4. Actividades y Excursiones: Incluye [Especificar Actividades].'),0,1);
+    $pdf->Cell(0,10,utf8_decode('5. Guía de Viaje: Servicios de un guía profesional durante todo el viaje.'),0,1);
+    $pdf->Ln(10);
+
+    // Agregar términos y condiciones
+    $pdf->Cell(0,10,utf8_decode('Términos y Condiciones:'),0,1);
+    $pdf->MultiCell(0,10,utf8_decode('1. El titular del contrato debe presentar identificación válida y comprobantes de pago al inicio del viaje.'));
+    $pdf->MultiCell(0,10,utf8_decode('2. Las cancelaciones deben realizarse con al menos 30 días de anticipación para reembolsos completos.'));
+    $pdf->MultiCell(0,10,utf8_decode('3. Hasbi On Tour no se hace responsable por pérdidas o daños de bienes personales durante el viaje.'));
+    $pdf->MultiCell(0,10,utf8_decode('4. El titular del contrato debe cumplir con todas las normas y regulaciones locales del destino visitado.'));
+    $pdf->MultiCell(0,10,utf8_decode('5. Cualquier cambio en el itinerario debe ser notificado con antelación y puede estar sujeto a cargos adicionales.'));
+    $pdf->Ln(10);
+
+    // Agregar contacto de emergencia
+    $pdf->Cell(0,10,utf8_decode('Contacto de Emergencia:'),0,1);
+    $pdf->Cell(0,10,utf8_decode('- Teléfono: +56984494726'),0,1);
+    $pdf->Cell(0,10,utf8_decode('- Correo Electrónico: contacto@hasbiontour.cl'),0,1);
     $pdf->Ln(20);
 
-    // Agregar contenido del contrato
-    $pdf->MultiCell(0, 10, 'Este es el contrato de viaje para el usuario. A continuación se detallan los términos y condiciones del viaje contratado.');
+    // Firma
+    $pdf->Cell(0,10,utf8_decode('Firma:'),0,1);
+    $pdf->Ln(20);
+    $pdf->Cell(0,10,'______________________',0,1);
+    $pdf->Cell(0,10,utf8_decode('Representante de Hasbi On Tour'),0,1);
     $pdf->Ln(10);
+    $pdf->Cell(0,10,'______________________',0,1);
+    $pdf->Cell(0,10,utf8_decode($user_row['nombre']) . ' ' . utf8_decode($user_row['apellido']),0,1);
 
     // Output PDF
     $pdf->Output('D', 'contrato_viaje.pdf'); // D para forzar la descarga
+
 
     $user_query->close();
     $conn->close();
