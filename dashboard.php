@@ -3,12 +3,53 @@ session_start();
 header('Content-Type: text/html; charset=utf-8');
 
 if (!isset($_SESSION['usuario_id'])) {
-    header("Location: index.html");
+    header("Location: index.php");
     exit();
 }
 
 include 'backend/config.php';
 
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_GET['action']) && $_GET['action'] == 'change_password') {
+    $oldPassword = $_POST['oldPassword'];
+    $newPassword = $_POST['newPassword'];
+    $confirmPassword = $_POST['confirmPassword'];
+
+    // Verificar que las nuevas contraseñas coincidan
+    if ($newPassword !== $confirmPassword) {
+        echo "<script>alert('Las contraseñas nuevas no coinciden.'); window.location.href='dashboard.php#configuracionCuenta';</script>";
+        exit();
+    }
+
+    // Obtener la contraseña actual del usuario desde la base de datos
+    $query = $conn->prepare("SELECT password FROM usuarios WHERE id = ?");
+    $query->bind_param("i", $usuarioId);
+    $query->execute();
+    $result = $query->get_result();
+    $user = $result->fetch_assoc();
+
+    // Verificar que la contraseña actual ingresada coincida con la almacenada en la base de datos
+    if (!password_verify($oldPassword, $user['password'])) {
+        echo "<script>alert('La contraseña actual es incorrecta.'); window.location.href='dashboard.php#configuracionCuenta';</script>";
+        exit();
+    }
+
+    // Encriptar la nueva contraseña
+    $hashedNewPassword = password_hash($newPassword, PASSWORD_DEFAULT);
+
+    // Actualizar la contraseña en la base de datos
+    $updateQuery = $conn->prepare("UPDATE usuarios SET password = ? WHERE id = ?");
+    $updateQuery->bind_param("si", $hashedNewPassword, $usuarioId);
+
+    if ($updateQuery->execute()) {
+        echo "<script>alert('Contraseña cambiada exitosamente.'); window.location.href='dashboard.php#configuracionCuenta';</script>";
+    } else {
+        echo "<script>alert('Error al cambiar la contraseña: " . $conn->error . "'); window.location.href='dashboard.php#configuracionCuenta';</script>";
+    }
+
+    $query->close();
+    $updateQuery->close();
+    $conn->close();
+}
 
 // Funcionalidades adicionales
 $usuarioId = $_SESSION['usuario_id'];
@@ -376,31 +417,52 @@ function generateContract($usuario_id) {
 ?>
 
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title>Panel de Usuario - Hasbi On Tour</title>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hasbi On Tour - Dashboard</title>
+    <link href="lib/lightbox/css/lightbox.min.css" rel="stylesheet">
     <link href="css/bootstrap.min.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
 </head>
 <body>
-    <!-- Navbar Start -->
-    <nav class="navbar navbar-expand-lg bg-light navbar-light sticky-top">
-        <a href="index.html" class="navbar-brand d-flex align-items-center px-4 px-lg-5">
-            <h1 class="m-0 text-primary">Hasbi On Tour</h1>
-        </a>
-        <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbarCollapse">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarCollapse">
-            <div class="navbar-nav ms-auto p-4 p-lg-0">
-                <a href="index.html" class="nav-item nav-link">Inicio</a>
-                <a href="backend/logout.php" class="nav-item nav-link">Cerrar sesión</a>
+    <div class="container-fluid bg-primary px-5 d-none d-lg-block">
+        <div class="row gx-0">
+            <div class="col-lg-8 text-center text-lg-start mb-2 mb-lg-0">
+                <div class="d-inline-flex align-items-center" style="height: 45px;">
+                    <a class="btn btn-sm btn-outline-light btn-sm-square rounded-circle me-2" href=""><i class="fab fa-twitter fw-normal"></i></a>
+                    <a class="btn btn-sm btn-outline-light btn-sm-square rounded-circle me-2" href=""><i class="fab fa-facebook-f fw-normal"></i></a>
+                    <a class="btn btn-sm btn-outline-light btn-sm-square rounded-circle me-2" href=""><i class="fab fa-linkedin-in fw-normal"></i></a>
+                    <a class="btn btn-sm btn-outline-light btn-sm-square me-2" href=""><i class="fab fa-instagram fw-normal"></i></a>
+                    <a class="btn btn-sm btn-outline-light btn-sm-square" href=""><i class="fab fa-youtube fw-normal"></i></a>
+                </div>
+            </div>
+            <div class="col-lg-4 text-center text-lg-end">
+                <div class="d-inline-flex align-items-center" style="height: 45px;">
+                <div class="navbar-nav ms-auto py-0">
+                    <a href="#home" class="nav-item nav-link active">Inicio</a>
+                </div>
+                    <?php if(isset($_SESSION['usuario_id'])): ?>
+                        <div class="dropdown">
+                            <a href="#" class="dropdown-toggle text-light" data-bs-toggle="dropdown"><small><i class="fa fa-user me-2"></i> Mi Panel</small></a>
+                            <div class="dropdown-menu rounded">
+                                <a href="dashboard.php#miPerfil" class="dropdown-item"><i class="fas fa-user-alt me-2"></i> Mi Perfil</a>
+                                <a href="dashboard.php#bandejaEntrada" class="dropdown-item"><i class="fas fa-comment-alt me-2"></i> Bandeja de entrada</a>
+                                <a href="dashboard.php#notificaciones" class="dropdown-item"><i class="fas fa-bell me-2"></i> Notificaciones</a>
+                                <a href="dashboard.php#configuracionCuenta" class="dropdown-item"><i class="fas fa-cog me-2"></i> Configuración de la cuenta</a>
+                                <a href="backend/logout.php" class="dropdown-item"><i class="fas fa-power-off me-2"></i> Cerrar sesión</a>
+                            </div>
+                        </div>
+                    <?php else: ?>
+                        <a href="#" data-bs-toggle="modal" data-bs-target="#registerModal"><small class="me-3 text-light"><i class="fa fa-user me-2"></i>Registrar</small></a>
+                        <a href="#" data-bs-toggle="modal" data-bs-target="#loginModal"><small class="me-3 text-light"><i class="fa fa-sign-in-alt me-2"></i>Iniciar sesión</small></a>
+                    <?php endif; ?>
+                </div>
             </div>
         </div>
-    </nav>
-    <!-- Navbar End -->
+    </div>
 
     <!-- Dashboard Start -->
     <div class="container-fluid py-5">
@@ -421,7 +483,6 @@ function generateContract($usuario_id) {
                 </div>
                 <div class="col-lg-9">
                     <h3>Bienvenido, <?php echo $_SESSION['nombre']; ?> <?php echo $_SESSION['apellido']; ?></h3>
-                    <!-- Finanzas -->
                     <div id="finanzas" class="tab-content">
                         <h3>Finanzas</h3>
                         <?php if (isset($abonoMensaje)) echo '<p>' . $abonoMensaje . '</p>'; ?>
@@ -433,7 +494,6 @@ function generateContract($usuario_id) {
                             <button type="submit" class="btn btn-primary">Abonar</button>
                         </form>
                     </div>
-                    <!-- Reportes -->
                     <div id="reportes" class="tab-content" style="display: none;">
                         <h3>Reportes</h3>
                         <table class="table">
@@ -460,7 +520,6 @@ function generateContract($usuario_id) {
                             <a href="dashboard.php?action=generate_contract" class="btn btn-success">Generar Contrato de Viaje</a>
                         <?php endif; ?>
                     </div>
-                    <!-- Seguros -->
                     <div id="seguros" class="tab-content" style="display: none;">
                         <h3>Seguros</h3>
                         <p>Aquí el usuario puede descargar la póliza una vez finalizado el pago.</p>
@@ -470,7 +529,6 @@ function generateContract($usuario_id) {
                             <p>No ha alcanzado el monto necesario para generar la póliza.</p>
                         <?php endif; ?>
                     </div>
-                    <!-- Contratos -->
                     <div id="contratos" class="tab-content" style="display: none;">
                         <h3>Contratos</h3>
                         <p>Aquí el usuario puede descargar los contratos por el servicio contratado.</p>
@@ -480,7 +538,6 @@ function generateContract($usuario_id) {
                             <p>No ha alcanzado el monto necesario para generar el contrato.</p>
                         <?php endif; ?>
                     </div>
-                    <!-- Contacto -->
                     <div id="contacto" class="tab-content" style="display: none;">
                         <h3>Contacto</h3>
                         <form>
@@ -507,7 +564,7 @@ function generateContract($usuario_id) {
                         <p>Email: <?php echo $user['email']; ?></p>
                     </div>
                     <!-- Bandeja de Entrada -->
-                    <div id="bandejaEntrada" class="tab-content" style="display:                        none;">
+                    <div id="bandejaEntrada" class="tab-content" style="display: none;">
                         <h3>Bandeja de entrada</h3>
                         <?php if (!empty($messages)): ?>
                             <ul>
@@ -535,7 +592,7 @@ function generateContract($usuario_id) {
                     <!-- Configuración de la Cuenta -->
                     <div id="configuracionCuenta" class="tab-content" style="display: none;">
                         <h3>Configuración de la cuenta</h3>
-                        <form method="POST" action="backend/change_password.php">
+                        <form method="POST" action="dashboard.php?action=change_password">
                             <div class="mb-3">
                                 <label for="oldPassword" class="form-label">Contraseña Actual</label>
                                 <input type="password" class="form-control" id="oldPassword" name="oldPassword" required>

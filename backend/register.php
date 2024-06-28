@@ -1,41 +1,57 @@
 <?php
-include 'config.php';
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+session_start();
+header('Content-Type: application/json; charset=utf-8');
 
-$name = $_POST['name'];
-$lastName = $_POST['lastName'];
-$email = $_POST['email'];
-$password = password_hash($_POST['password'], PASSWORD_BCRYPT);
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    include 'config.php';
 
-// Comprobar si el correo electrónico ya existe
-$query = $conn->prepare("SELECT * FROM usuarios WHERE email = ?");
-$query->bind_param("s", $email);
-$query->execute();
-$result = $query->get_result();
+    $nombre = $_POST['nombre'];
+    $apellido = $_POST['apellido'];
+    $email = $_POST['email'];
+    $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
 
-if ($result->num_rows > 0) {
-    echo json_encode([
-        "status" => "error",
-        "message" => "El correo electrónico ya está registrado. <a href=\"javascript:void(0);\" onclick=\"showLoginModal()\">Iniciar sesión</a>"
-    ]);
-} else {
-    $stmt = $conn->prepare("INSERT INTO usuarios (nombre, apellido, email, password) VALUES (?, ?, ?, ?)");
-    $stmt->bind_param("ssss", $name, $lastName, $email, $password);
+    // Verificar si el correo electrónico ya existe
+    $stmt = $conn->prepare("SELECT id FROM usuarios WHERE email = ?");
+    if ($stmt === false) {
+        echo json_encode(['status' => 'error', 'message' => 'Error en prepare: ' . $conn->error]);
+        exit();
+    }
 
-    if ($stmt->execute()) {
-        echo json_encode([
-            "status" => "success",
-            "message" => "Registro exitoso. <a href=\"javascript:void(0);\" onclick=\"showLoginModal()\">Iniciar sesión</a>"
-        ]);
-    } else {
-        echo json_encode([
-            "status" => "error",
-            "message" => "Ocurrió un error al registrar el usuario."
-        ]);
+    $stmt->bind_param("s", $email);
+    $stmt->execute();
+    $stmt->store_result();
+
+    if ($stmt->num_rows > 0) {
+        echo json_encode(['status' => 'error', 'message' => 'El correo electrónico ya está registrado.']);
+        $stmt->close();
+        $conn->close();
+        exit();
     }
 
     $stmt->close();
-}
 
-$query->close();
-$conn->close();
+    // Insertar nuevo usuario
+    $stmt = $conn->prepare("INSERT INTO usuarios (nombre, apellido, email, password) VALUES (?, ?, ?, ?)");
+    if ($stmt === false) {
+        echo json_encode(['status' => 'error', 'message' => 'Error en prepare: ' . $conn->error]);
+        exit();
+    }
+
+    $stmt->bind_param("ssss", $nombre, $apellido, $email, $password);
+    if ($stmt->execute()) {
+        $_SESSION['usuario_id'] = $stmt->insert_id;
+        $_SESSION['nombre'] = $nombre;
+        $_SESSION['apellido'] = $apellido;
+        $_SESSION['email'] = $email;
+        echo json_encode(['status' => 'success', 'message' => 'Registro exitoso. Ahora puede iniciar sesión.']);
+    } else {
+        echo json_encode(['status' => 'error', 'message' => 'Error en execute: ' . $stmt->error]);
+    }
+
+    $stmt->close();
+    $conn->close();
+    exit();
+}
 ?>

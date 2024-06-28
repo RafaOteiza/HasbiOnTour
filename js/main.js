@@ -148,3 +148,55 @@ $(document).ready(function () {
         });
     });
 });
+
+
+    function showLoginModal() {
+        $('#registerModal').modal('hide');
+        $('#loginModal').modal('show');
+    }
+
+    $(document).ready(function () {
+        $('#registerForm').on('submit', function (e) {
+            e.preventDefault();
+            $.ajax({
+                type: 'POST',
+                url: 'backend/register.php',
+                data: $(this).serialize(),
+                success: function(response) {
+                    console.log("Response received:");
+                    console.log(response);
+                    var res = JSON.parse(response);
+                    $('#registerMessage').html(res.message).removeClass().addClass('alert alert-' + (res.status === 'success' ? 'success' : 'danger'));
+                    if (res.status === 'success') {
+                        $('#registerForm')[0].reset();
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error("Error occurred:");
+                    console.error(xhr.responseText);
+                }
+            });
+        });
+
+        $('#loginForm').on('submit', function (e) {
+            e.preventDefault();
+            $.ajax({
+                type: 'POST',
+                url: 'backend/login.php',
+                data: $(this).serialize(),
+                success: function(response) {
+                    var res = JSON.parse(response);
+                    if (res.status === 'success') {
+                        alert('Inicio de sesión exitoso');
+                        window.location.href = res.redirect;
+                    } else {
+                        alert(res.message);
+                    }
+                },
+                error: function() {
+                    alert('Error en la solicitud de inicio de sesión');
+                }
+            });
+        });
+    });
+
