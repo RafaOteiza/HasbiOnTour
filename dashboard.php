@@ -7,6 +7,50 @@ if (!isset($_SESSION['usuario_id'])) {
 
 include 'backend/config.php';
 
+
+// Funcionalidades adicionales
+$usuarioId = $_SESSION['usuario_id'];
+$user = [];
+$messages = [];
+$notifications = [];
+
+// Obtener datos del usuario
+$sql = "SELECT nombre, apellido, email FROM usuarios WHERE id = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("i", $usuarioId);
+$stmt->execute();
+$stmt->bind_result($nombre, $apellido, $email);
+if ($stmt->fetch()) {
+    $user = [
+        'nombre' => $nombre,
+        'apellido' => $apellido,
+        'email' => $email
+    ];
+}
+$stmt->close();
+
+// Obtener mensajes del administrador
+$sql = "SELECT mensaje FROM mensajes WHERE usuario_id = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("i", $usuarioId);
+$stmt->execute();
+$stmt->bind_result($mensaje);
+while ($stmt->fetch()) {
+    $messages[] = ['mensaje' => $mensaje];
+}
+$stmt->close();
+
+// Obtener notificaciones
+$sql = "SELECT notificacion FROM notificaciones WHERE usuario_id = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("i", $usuarioId);
+$stmt->execute();
+$stmt->bind_result($notificacion);
+while ($stmt->fetch()) {
+    $notifications[] = ['notificacion' => $notificacion];
+}
+$stmt->close();
+
 $abonoMensaje = '';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['abonoMonto'])) {
@@ -268,19 +312,6 @@ function generateContract($usuario_id) {
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <link href="css/bootstrap.min.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
-    <style>
-        .navbar-light {
-            background-color: #002366;
-        }
-        .list-group-item.active {
-            background-color: #002366;
-            border-color: #002366;
-        }
-        .btn-primary {
-            background-color: #002366;
-            border-color: #002366;
-        }
-    </style>
 </head>
 <body>
     <!-- Navbar Start -->
@@ -311,10 +342,15 @@ function generateContract($usuario_id) {
                         <a href="#" class="list-group-item list-group-item-action" id="seguros-tab">Seguros</a>
                         <a href="#" class="list-group-item list-group-item-action" id="contratos-tab">Contratos</a>
                         <a href="#" class="list-group-item list-group-item-action" id="contacto-tab">Contacto</a>
+                        <a href="#" class="list-group-item list-group-item-action" id="miPerfil-tab">Mi Perfil</a>
+                        <a href="#" class="list-group-item list-group-item-action" id="bandejaEntrada-tab">Bandeja de entrada</a>
+                        <a href="#" class="list-group-item list-group-item-action" id="notificaciones-tab">Notificaciones</a>
+                        <a href="#" class="list-group-item list-group-item-action" id="configuracionCuenta-tab">Configuración de la cuenta</a>
                     </div>
                 </div>
                 <div class="col-lg-9">
                     <h3>Bienvenido, <?php echo $_SESSION['nombre']; ?> <?php echo $_SESSION['apellido']; ?></h3>
+                    <!-- Finanzas -->
                     <div id="finanzas" class="tab-content">
                         <h3>Finanzas</h3>
                         <?php if (isset($abonoMensaje)) echo '<p>' . $abonoMensaje . '</p>'; ?>
@@ -326,6 +362,7 @@ function generateContract($usuario_id) {
                             <button type="submit" class="btn btn-primary">Abonar</button>
                         </form>
                     </div>
+                    <!-- Reportes -->
                     <div id="reportes" class="tab-content" style="display: none;">
                         <h3>Reportes</h3>
                         <table class="table">
@@ -352,6 +389,7 @@ function generateContract($usuario_id) {
                             <a href="dashboard.php?action=generate_contract" class="btn btn-success">Generar Contrato de Viaje</a>
                         <?php endif; ?>
                     </div>
+                    <!-- Seguros -->
                     <div id="seguros" class="tab-content" style="display: none;">
                         <h3>Seguros</h3>
                         <p>Aquí el usuario puede descargar la póliza una vez finalizado el pago.</p>
@@ -361,6 +399,7 @@ function generateContract($usuario_id) {
                             <p>No ha alcanzado el monto necesario para generar la póliza.</p>
                         <?php endif; ?>
                     </div>
+                    <!-- Contratos -->
                     <div id="contratos" class="tab-content" style="display: none;">
                         <h3>Contratos</h3>
                         <p>Aquí el usuario puede descargar los contratos por el servicio contratado.</p>
@@ -370,6 +409,7 @@ function generateContract($usuario_id) {
                             <p>No ha alcanzado el monto necesario para generar el contrato.</p>
                         <?php endif; ?>
                     </div>
+                    <!-- Contacto -->
                     <div id="contacto" class="tab-content" style="display: none;">
                         <h3>Contacto</h3>
                         <form>
@@ -386,6 +426,58 @@ function generateContract($usuario_id) {
                                 <textarea class="form-control" id="contactoMensaje" rows="3" required></textarea>
                             </div>
                             <button type="submit" class="btn btn-primary">Enviar</button>
+                        </form>
+                    </div>
+                    <!-- Mi Perfil -->
+                    <div id="miPerfil" class="tab-content" style="display: none;">
+                        <h3>Mi Perfil</h3>
+                        <p>Nombre: <?php echo $user['nombre']; ?></p>
+                        <p>Apellido: <?php echo $user['apellido']; ?></p>
+                        <p>Email: <?php echo $user['email']; ?></p>
+                    </div>
+                    <!-- Bandeja de Entrada -->
+                    <div id="bandejaEntrada" class="tab-content" style="display:                        none;">
+                        <h3>Bandeja de entrada</h3>
+                        <?php if (!empty($messages)): ?>
+                            <ul>
+                                <?php foreach ($messages as $message): ?>
+                                    <li><?php echo $message['mensaje']; ?></li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php else: ?>
+                            <p>No tienes mensajes nuevos.</p>
+                        <?php endif; ?>
+                    </div>
+                    <!-- Notificaciones -->
+                    <div id="notificaciones" class="tab-content" style="display: none;">
+                        <h3>Notificaciones</h3>
+                        <?php if (!empty($notifications)): ?>
+                            <ul>
+                                <?php foreach ($notifications as $notification): ?>
+                                    <li><?php echo $notification['notificacion']; ?></li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php else: ?>
+                            <p>No tienes notificaciones nuevas.</p>
+                        <?php endif; ?>
+                    </div>
+                    <!-- Configuración de la Cuenta -->
+                    <div id="configuracionCuenta" class="tab-content" style="display: none;">
+                        <h3>Configuración de la cuenta</h3>
+                        <form method="POST" action="backend/change_password.php">
+                            <div class="mb-3">
+                                <label for="oldPassword" class="form-label">Contraseña Actual</label>
+                                <input type="password" class="form-control" id="oldPassword" name="oldPassword" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="newPassword" class="form-label">Nueva Contraseña</label>
+                                <input type="password" class="form-control" id="newPassword" name="newPassword" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="confirmPassword" class="form-label">Confirmar Nueva Contraseña</label>
+                                <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Cambiar Contraseña</button>
                         </form>
                     </div>
                 </div>
@@ -405,7 +497,20 @@ function generateContract($usuario_id) {
                 const target = $(this).attr('id').split('-')[0];
                 $('#' + target).show();
             });
+
+            <?php if (isset($_GET['tab'])): ?>
+            const activeTab = '<?php echo $_GET['tab']; ?>';
+            $('.list-group-item').removeClass('active');
+            $('#' + activeTab + '-tab').addClass('active');
+            $('.tab-content').hide();
+            $('#' + activeTab).show();
+            <?php endif; ?>
         });
     </script>
 </body>
 </html>
+
+
+
+
+
